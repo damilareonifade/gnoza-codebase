@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \":*)",
+      "Bash(timeout 5 python manage.py runserver 8003)"
+    ]
+  }
+}
