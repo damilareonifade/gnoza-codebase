@@ -1,6 +1,5 @@
 from .login import LoginSerializer, UserMiniSerializer
 from .register import RegisterSerializer
-from .profile import ProfileSerializer, UserSerializer
 from .password import PasswordChangeSerializer, PasswordForgotSerializer, PasswordResetConfirmSerializer
 from .images import AvatarSerializer
 from .preference import (
@@ -13,9 +12,7 @@ from .preference import (
 __all__ = [
     "LoginSerializer",
     "UserMiniSerializer",
-    "RegisterSerializer",
-    "ProfileSerializer",
-    "UserSerializer",
+    "RegisterSerializer",   
     "PasswordChangeSerializer",
     "PasswordForgotSerializer",
     "PasswordResetConfirmSerializer",

@@ -10,8 +10,7 @@ urlpatterns = [
     path("activate-account/<str:token>", ActivateUserView.as_view(), name="activate-account"),
 
     # Profile (existing)
-    path("profile", ProfileView.as_view(), name="profile"),
-    path("profile/avatar", UpdateUserAvatarView.as_view(), name="update-avatar"),
+    path("profile", UserProfileDetailView.as_view(), name="profile"),
 
     # Password
     path("password/change", PasswordChangeView.as_view(), name="password-change"),

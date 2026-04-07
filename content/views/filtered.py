@@ -56,7 +56,6 @@ class CategoriesListView(APIView):
 
 @method_decorator(cache_page(60 * 5), name="dispatch")
 class TrendingView(APIView):
-    """GET /api/v1/content/trending/ — trending clusters within 72 hours."""
     permission_classes = [AllowAny]
     pagination_class = StandardPagination
 

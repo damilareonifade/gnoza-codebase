@@ -23,7 +23,7 @@ CATEGORY_CHOICES = [
 
 class ContentCluster(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    cluster_hash = models.CharField(max_length=64, blank=True, null=True, db_index=True)
+    cluster_hash = models.CharField(max_length=64, blank=True, db_index=True)
 
     canonical_title = models.CharField(max_length=600)
     canonical_url = models.URLField(max_length=2000)
@@ -33,8 +33,7 @@ class ContentCluster(models.Model):
     content_type = models.CharField(
         max_length=20,
         choices=[("NEWS", "News"), ("ARTICLE", "Article/Learning"), ("EVENT", "Event")],
-        blank=True,
-        null=True,
+        blank=True
     )
     type_confidence = models.FloatField(
         default=0.0,
@@ -63,13 +62,13 @@ class ContentCluster(models.Model):
     full_text_fetched = models.BooleanField(default=False)
     summary_generated = models.BooleanField(default=False)
 
-    location_name = models.CharField(max_length=200, blank=True, null=True)
+    location_name = models.CharField(max_length=200, blank=True)
     latitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
 
     event_start_time = models.DateTimeField(blank=True, null=True)
     event_end_time = models.DateTimeField(blank=True, null=True)
-    event_venue = models.CharField(max_length=300, blank=True, null=True)
+    event_venue = models.CharField(max_length=300, blank=True)
     is_event = models.BooleanField(default=False, db_index=True)
 
     class Meta:

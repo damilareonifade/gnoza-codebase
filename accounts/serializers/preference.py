@@ -14,14 +14,15 @@ VALID_TOPICS = [
 class UserPreferenceSerializer(serializers.ModelSerializer):
     profile_picture_url = serializers.SerializerMethodField()
     display_name = serializers.SerializerMethodField()
+    full_name = serializers.SerializerMethodField()
     initials = serializers.SerializerMethodField()
 
     class Meta:
         model = UserPreference
         fields = [
             "id",
-            "full_name",
             "phone_number",
+            "full_name",
             "bio",
             "website",
             "profile_picture",
@@ -38,6 +39,7 @@ class UserPreferenceSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = [
             "id",
+            "full_name",
             "onboarding_completed",
             "onboarding_step",
             "display_name",
@@ -55,6 +57,9 @@ class UserPreferenceSerializer(serializers.ModelSerializer):
 
     def get_display_name(self, obj):
         return obj.get_display_name()
+    
+    def get_full_name(self, obj):
+        return obj.user.get_full_name()
 
     def get_initials(self, obj):
         return obj.get_initials()
@@ -74,6 +79,8 @@ class UserPreferenceUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserPreference
         fields = [
+            "bio",
+            "phone_number",
             "preferred_topics",
             "preferred_sources",
             "preferred_locations",
@@ -114,7 +121,6 @@ class OnboardingUpdateSerializer(serializers.Serializer):
 
 
 class EditProfileSerializer(serializers.Serializer):
-    full_name = serializers.CharField(max_length=100, required=False)
     phone_number = serializers.CharField(max_length=20, required=False)
     bio = serializers.CharField(required=False, allow_blank=True)
     website = serializers.URLField(required=False, allow_blank=True)

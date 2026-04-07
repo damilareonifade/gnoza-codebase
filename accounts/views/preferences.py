@@ -87,7 +87,7 @@ class UserProfileDetailView(APIView):
                     "avatar_url": avatar_url,
                     "initials": prefs.get_initials(),
                     "display_name": prefs.get_display_name(),
-                    "full_name": prefs.full_name or "",
+                    "full_name": user.get_full_name() or "",
                     "phone_number": prefs.phone_number or "",
                     "bio": prefs.bio or "",
                     "website": prefs.website or "",
