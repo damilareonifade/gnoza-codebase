@@ -6,9 +6,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-
+from celery.schedules import crontab
 SECRET_KEY = os.environ["SECRET_KEY"]
-DEBUG = os.getenv("DEBUG", "False") == "True"
+DEBUG = True
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 # ---------------------------------------------------------------------------
@@ -31,6 +31,8 @@ THIRD_PARTY_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "drf_spectacular",
+    'django_celery_beat',
+    'django_celery_results'
 ]
 
 LOCAL_APPS = [
@@ -108,18 +110,12 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-# ---------------------------------------------------------------------------
-# Internationalisation
-# ---------------------------------------------------------------------------
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
-# ---------------------------------------------------------------------------
-# Static & media
-# ---------------------------------------------------------------------------
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
@@ -130,9 +126,6 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# ---------------------------------------------------------------------------
-# CORS
-# ---------------------------------------------------------------------------
 
 CORS_ALLOWED_ORIGINS = os.getenv(
     "CORS_ALLOWED_ORIGINS", "http://localhost:3000"
@@ -152,10 +145,6 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "gnoza.exceptions.custom_exception_handler",
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
-
-# ---------------------------------------------------------------------------
-# drf-spectacular — OpenAPI / Swagger
-# ---------------------------------------------------------------------------
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "GnozaAI API",
@@ -189,9 +178,6 @@ SPECTACULAR_SETTINGS = {
     ],
 }
 
-# ---------------------------------------------------------------------------
-# Simple JWT
-# ---------------------------------------------------------------------------
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GOOGLE_CLOUD_TTS_CREDENTIALS = os.getenv("GOOGLE_CLOUD_TTS_CREDENTIALS", "")
@@ -215,9 +201,185 @@ SIMPLE_JWT = {
     "TOKEN_OBTAIN_PAIR_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainPairSerializer",
 }
 
-# ---------------------------------------------------------------------------
-# Email
-# ---------------------------------------------------------------------------
+
+# ==========================================
+# REDIS & CELERY - Production strict, Local safe fallback
+# ==========================================
+REDIS_URL = os.getenv('REDIS_URL')
+
+if REDIS_URL:
+    # Production: use Render's REDIS_URL exactly
+    REDIS_LOCATION = REDIS_URL.rstrip('/') + '/0'
+else:
+    # Local development: safe fallback
+    if DEBUG:
+        REDIS_LOCATION = 'redis://localhost:6379/0'
+        print("WARNING: REDIS_URL not set. Using local Redis fallback for development.")
+    else:
+        raise ValueError("REDIS_URL is required in production! Set it in Render environment variables.")
+
+# Cache
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": REDIS_LOCATION,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+        "KEY_PREFIX": "gnoza"
+    }
+}
+
+# Celery
+CELERY_BROKER_URL = REDIS_LOCATION
+CELERY_RESULT_BACKEND = REDIS_LOCATION
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+CELERY_ENABLE_UTC = True
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
+# Channels (WebSockets)
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [REDIS_LOCATION],
+            "capacity": 1500,
+            "expiry": 10,
+        },
+    },
+}
+
+# Beat Scheduler
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+
+CELERY_BEAT_SCHEDULE = {
+    # PRIMARY: Gemini Multi-Source (Every 4 hours)
+    'gemini-multi-source-fetch': {
+        'task': 'content.tasks.gemini_multi_source_fetch',
+        'schedule': crontab(minute=0, hour='*/4'),
+    },
+
+    # NewsAPI (Every 2 hours at :30)
+    'fetch-newsapi-articles': {
+        'task': 'content.tasks.fetch_newsapi_articles',
+        'schedule': crontab(minute=30, hour='*/2'),
+    },
+
+    # RSS Feeds (Every 3 hours)
+    'fetch-rss-feeds': {
+        'task': 'content.tasks.fetch_rss_feeds',
+        'schedule': crontab(minute=0, hour='*/3'),
+    },
+
+    # Guardian (Every 6 hours at :15)
+    'fetch-guardian-articles': {
+        'task': 'content.tasks.fetch_guardian_articles',
+        'schedule': crontab(minute=15, hour='*/6'),
+    },
+
+    # Nigerian Sources (Daily at 8 AM UTC)
+    'fetch-nigerian-newspapers': {
+        'task': 'content.tasks.fetch_nigerian_newspapers',
+        'schedule': crontab(minute=0, hour=8),
+    },
+
+    # Events
+    'fetch-ticketmaster-events': {
+        'task': 'content.tasks.fetch_ticketmaster_events',
+        'schedule': crontab(minute=0, hour=12),  # Daily at noon
+    },
+
+    'fetch-eventbrite-events': {
+        'task': 'content.tasks.fetch_eventbrite_events',
+        'schedule': crontab(minute=30, hour=12),  # Daily at 12:30 PM
+    },
+
+    'fetch-local-nigerian-events': {
+        'task': 'content.tasks.fetch_local_nigerian_events',
+        'schedule': crontab(minute=0, hour=14),  # Daily at 2 PM
+    },
+
+    # Cleanup
+    'cleanup-duplicate-events': {
+        'task': 'content.tasks.cleanup_duplicate_events',
+        'schedule': crontab(minute=0, hour=3),  # Daily at 3 AM
+    },
+
+    # Enrichment
+    'fetch-missing-full-text': {
+        'task': 'content.tasks.fetch_missing_full_text',
+        'schedule': crontab(minute=0, hour='*/6'),  # Every 6 hours
+    },
+
+    'fetch-missing-images': {
+        'task': 'content.tasks.fetch_missing_images',
+        'schedule': crontab(minute=30, hour='*/6'),  # Every 6 hours at :30
+    },
+
+    # Reminders
+    'check-and-send-due-reminders': {
+        'task': 'reminders.tasks.check_and_send_due_reminders',
+        'schedule': crontab(minute='*/5'),  # Every 5 minutes
+    },
+
+    'check-learning-sessions': {
+        'task': 'reminders.tasks.check_learning_sessions',
+        'schedule': crontab(minute=0),  # Every hour
+    },
+
+    'check-upcoming-birthdays': {
+        'task': 'reminders.tasks.check_upcoming_birthdays',
+        'schedule': crontab(minute=0, hour=6),  # Daily at 6 AM
+    },
+
+    'cleanup-old-completed-reminders': {
+        'task': 'reminders.tasks.cleanup_old_completed_reminders',
+        'schedule': crontab(minute=0, hour=2, day_of_week=0),  # Weekly on Sunday at 2 AM
+    },
+}
+
+NEWSAPI_KEY = os.getenv('NEWSAPI_KEY')
+GUARDIAN_API_KEY = os.getenv('GUARDIAN_API_KEY')
+YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
+
+REDDIT_CLIENT_ID = os.getenv('REDDIT_CLIENT_ID')
+REDDIT_CLIENT_SECRET = os.getenv('REDDIT_CLIENT_SECRET')
+REDDIT_USER_AGENT = os.getenv('REDDIT_USER_AGENT', 'GnozaAI/1.0')
+
+TICKETMASTER_API_KEY = os.getenv('TICKETMASTER_API_KEY')
+EVENTBRITE_PRIVATE_TOKEN = os.getenv('EVENTBRITE_PRIVATE_TOKEN', '')
+
+TICKETMASTER_COUNTRY_PRIORITIES = ['NG', 'US', 'GB', 'CA', 'ZA', 'KE', 'GH']
+
+RSS_FEEDS = {
+    'BBC World': 'http://feeds.bbci.co.uk/news/world/rss.xml',
+    'BBC Africa': 'http://feeds.bbci.co.uk/news/world/africa/rss.xml',
+    'Al Jazeera': 'https://www.aljazeera.com/xml/rss/all.xml',
+    'TechCrunch': 'https://techcrunch.com/feed/',
+    'Wired': 'https://www.wired.com/feed/rss',
+    'The Verge': 'https://www.theverge.com/rss/index.xml',
+}
+
+NIGERIAN_NEWS_SOURCES = {
+    'Punch Nigeria': {'homepage': 'https://punchng.com/', 'article_selector': 'article.entry-item-simple'},
+    'Daily Trust': {'homepage': 'https://dailytrust.com/', 'article_selector': 'div.post-item, div.article-item'},
+    'Vanguard': {'homepage': 'https://www.vanguardngr.com/', 'article_selector': 'article.entry'},
+}
+
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+if not GEMINI_API_KEY:
+    raise ValueError("GEMINI_API_KEY required!")
+
+GEMINI_FLASH_MODEL = 'gemini-2.5-flash'
+GEMINI_PRO_MODEL = 'gemini-2.5-pro'
+
+GEMINI_SOURCES_PER_TOPIC = 12
+GEMINI_MAX_TOPICS_PER_RUN = 15
+
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
@@ -231,91 +393,4 @@ DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "GnozaAI <noreply@gnoza.ai>
 # Jazzmin — Admin UI
 # ---------------------------------------------------------------------------
 
-JAZZMIN_SETTINGS = {
-    "site_title": "Gnoza Admin",
-    "site_header": "GnozaAI",
-    "site_brand": "GnozaAI",
-    "site_logo": None,
-    "login_logo": None,
-    "login_logo_dark": None,
-    "site_logo_classes": "img-circle",
-    "site_icon": None,
-    "welcome_sign": "Welcome to the GnozaAI Administration Panel",
-    "copyright": "GnozaAI Ltd — Personalized AI News & Events",
-    "search_model": ["accounts.User"],
-    "user_avatar": "profile.avatar",
-    "topmenu_links": [
-        {"name": "Dashboard", "url": "admin:index", "permissions": ["auth.view_user"]},
-        {"name": "API Docs", "url": "/api/v1/", "new_window": True},
-        {"model": "accounts.User"},
-    ],
-    "usermenu_links": [
-        {"name": "My Profile", "url": "/api/v1/auth/profile", "new_window": True},
-        {"model": "accounts.User"},
-    ],
-    "show_sidebar": True,
-    "navigation_expanded": True,
-    "hide_apps": [],
-    "hide_models": [],
-    "order_with_respect_to": [
-        "accounts",
-        "accounts.User",
-        "accounts.Profile",
-        "token_blacklist",
-    ],
-    "icons": {
-        "auth": "fas fa-users-cog",
-        "accounts": "fas fa-users",
-        "accounts.User": "fas fa-user-circle",
-        "accounts.Profile": "fas fa-id-card",
-        "token_blacklist": "fas fa-ban",
-        "token_blacklist.BlacklistedToken": "fas fa-times-circle",
-        "token_blacklist.OutstandingToken": "fas fa-key",
-    },
-    "default_icon_parents": "fas fa-chevron-circle-right",
-    "default_icon_children": "fas fa-dot-circle",
-    "related_modal_active": True,
-    "custom_css": None,
-    "custom_js": None,
-    "use_google_fonts_cdn": True,
-    "show_ui_builder": False,
-    "changeform_format": "horizontal_tabs",
-    "changeform_format_overrides": {
-        "accounts.user": "collapsible",
-        "accounts.profile": "horizontal_tabs",
-    },
-    "language_chooser": False,
-}
-
-JAZZMIN_UI_TWEAKS = {
-    "navbar_small_text": False,
-    "footer_small_text": False,
-    "body_small_text": False,
-    "brand_small_text": False,
-    "brand_colour": "navbar-primary",
-    "accent": "accent-indigo",
-    "navbar": "navbar-dark navbar-indigo",
-    "no_navbar_border": True,
-    "navbar_fixed": True,
-    "layout_boxed": False,
-    "footer_fixed": False,
-    "sidebar_fixed": True,
-    "sidebar": "sidebar-dark-indigo",
-    "sidebar_nav_small_text": False,
-    "sidebar_disable_expand": False,
-    "sidebar_nav_child_indent": True,
-    "sidebar_nav_compact_style": True,
-    "sidebar_nav_legacy_style": False,
-    "sidebar_nav_flat_style": False,
-    "theme": "darkly",
-    "dark_mode_theme": "darkly",
-    "button_classes": {
-        "primary": "btn-primary",
-        "secondary": "btn-secondary",
-        "info": "btn-outline-info",
-        "warning": "btn-warning",
-        "danger": "btn-danger",
-        "success": "btn-success",
-    },
-    "actions_sticky_top": True,
-}
+from .jazzmin import JAZZMIN_SETTINGS, JAZZMIN_UI_TWEAKS

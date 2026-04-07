@@ -7,7 +7,7 @@ __all__ = [
     "RawContent",
     "ContentCluster",
     "ClusterSource",
-    "CATEGORY_CHOICES",
+    # "CATEGORY_CHOICES",
     "Event",
     "EventSource",
     "EventAttendee",

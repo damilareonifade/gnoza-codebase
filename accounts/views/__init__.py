@@ -1,7 +1,6 @@
 from .login import LoginView, CustomRefreshToken
 from .register import RegisterView, ActivateUserView
 from .logout import LogoutView
-from .profile import ProfileView, UpdateUserAvatarView
 from .password import (
     PasswordChangeView,
     PasswordForgotView,
@@ -22,8 +21,6 @@ __all__ = [
     "RegisterView",
     "ActivateUserView",
     "LogoutView",
-    "ProfileView",
-    "UpdateUserAvatarView",
     "PasswordChangeView",
     "PasswordForgotView",
     "PasswordResetConfirmView",

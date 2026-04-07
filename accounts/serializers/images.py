@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from gnoza.exceptions import BadRequest
-from accounts.models import Profile
+from accounts.models import UserPreference
 
 ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp"}
 MAX_SIZE_MB = 5
@@ -10,7 +10,7 @@ class AvatarSerializer(serializers.ModelSerializer):
     avatar = serializers.ImageField(required=True)
 
     class Meta:
-        model = Profile
+        model = UserPreference
         fields = ("avatar",)
 
     def validate_avatar(self, value):

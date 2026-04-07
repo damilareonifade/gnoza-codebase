@@ -45,9 +45,6 @@ class UserPreference(TimestampedModel):
         on_delete=models.CASCADE,
         related_name="preferences",
     )
-
-    # === Public Profile Fields ===
-    full_name = models.CharField(max_length=100, blank=True, default="")
     phone_number = models.CharField(
         max_length=20,
         blank=True,
@@ -93,7 +90,7 @@ class UserPreference(TimestampedModel):
         return f"Preferences({self.user.email})"
 
     def get_display_name(self):
-        return self.full_name.strip() or self.user.get_full_name() or self.user.email
+        return self.user.first_name + " " + self.user.last_name
 
     def get_initials(self):
         name = self.get_display_name()
