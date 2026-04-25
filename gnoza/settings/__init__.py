@@ -2,14 +2,16 @@ from pathlib import Path
 from datetime import timedelta
 import os
 from dotenv import load_dotenv
-
+from aws_secret import get_secret
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 from celery.schedules import crontab
-SECRET_KEY = os.environ["SECRET_KEY"]
-DEBUG = True
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+
+secret = get_secret()
+SECRET_KEY = secret["SECRET_KEY"]
+DEBUG = secret["DEBUG"]
+ALLOWED_HOSTS = secret["ALLOWED_HOSTS"].split(",")
 
 # ---------------------------------------------------------------------------
 # Application definition
@@ -86,11 +88,11 @@ ASGI_APPLICATION = "gnoza.asgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ["DB_NAME"],
-        "USER": os.environ["DB_USER"],
-        "PASSWORD": os.environ["DB_PASSWORD"],
-        "HOST": os.getenv("DB_HOST", "localhost"),
-        "PORT": os.getenv("DB_PORT", "5432"),
+        "NAME": secret["DB_NAME"],
+        "USER": secret["DB_USER"],
+        "PASSWORD": secret["DB_PASSWORD"],
+        "HOST": secret["DB_HOST"],
+        "PORT": secret["DB_PORT"],
         "OPTIONS": {
             "connect_timeout": 10,
         },
@@ -205,7 +207,7 @@ SIMPLE_JWT = {
 # ==========================================
 # REDIS & CELERY - Production strict, Local safe fallback
 # ==========================================
-REDIS_URL = os.getenv('REDIS_URL')
+REDIS_URL = secret['REDIS_URL']
 
 if REDIS_URL:
     # Production: use Render's REDIS_URL exactly
@@ -342,16 +344,16 @@ CELERY_BEAT_SCHEDULE = {
     },
 }
 
-NEWSAPI_KEY = os.getenv('NEWSAPI_KEY')
-GUARDIAN_API_KEY = os.getenv('GUARDIAN_API_KEY')
-YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
+NEWSAPI_KEY = secret['NEWSAPI_KEY']
+GUARDIAN_API_KEY = secret['GUARDIAN_API_KEY']
+YOUTUBE_API_KEY = secret['YOUTUBE_API_KEY']
 
-REDDIT_CLIENT_ID = os.getenv('REDDIT_CLIENT_ID')
-REDDIT_CLIENT_SECRET = os.getenv('REDDIT_CLIENT_SECRET')
-REDDIT_USER_AGENT = os.getenv('REDDIT_USER_AGENT', 'GnozaAI/1.0')
+REDDIT_CLIENT_ID = secret['REDDIT_CLIENT_ID']
+REDDIT_CLIENT_SECRET = secret['REDDIT_CLIENT_SECRET']
+REDDIT_USER_AGENT = secret['REDDIT_USER_AGENT']
 
-TICKETMASTER_API_KEY = os.getenv('TICKETMASTER_API_KEY')
-EVENTBRITE_PRIVATE_TOKEN = os.getenv('EVENTBRITE_PRIVATE_TOKEN', '')
+TICKETMASTER_API_KEY = secret['TICKETMASTER_API_KEY']
+EVENTBRITE_PRIVATE_TOKEN = secret['EVENTBRITE_PRIVATE_TOKEN']
 
 TICKETMASTER_COUNTRY_PRIORITIES = ['NG', 'US', 'GB', 'CA', 'ZA', 'KE', 'GH']
 
