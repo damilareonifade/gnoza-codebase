@@ -8,7 +8,8 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 from celery.schedules import crontab
 
-secret = get_secret()
+db_secrets = get_secret("rds!db-b6160ecf-5de6-4e8b-b6ff-4abccb70a585")
+secret = get_secret("gnoza_app_secrets")
 SECRET_KEY = secret["SECRET_KEY"]
 DEBUG = secret["DEBUG"]
 ALLOWED_HOSTS = secret["ALLOWED_HOSTS"].split(",")
@@ -88,11 +89,11 @@ ASGI_APPLICATION = "gnoza.asgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": secret["DB_NAME"],
-        "USER": secret["DB_USER"],
-        "PASSWORD": secret["DB_PASSWORD"],
-        "HOST": secret["DB_HOST"],
-        "PORT": secret["DB_PORT"],
+        "NAME": db_secrets["DB_NAME"],
+        "USER": db_secrets["DB_USER"],
+        "PASSWORD": db_secrets["DB_PASSWORD"],
+        "HOST": db_secrets["DB_HOST"],
+        "PORT": db_secrets["DB_PORT"],
         "OPTIONS": {
             "connect_timeout": 10,
         },
