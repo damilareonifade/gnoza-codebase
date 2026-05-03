@@ -90,8 +90,8 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": secret["DB_NAME"],
-        "USER": db_secrets["DB_USER"],
-        "PASSWORD": db_secrets["DB_PASSWORD"],
+        "USER": db_secrets["username"],
+        "PASSWORD": db_secrets["password"],
         "HOST": secret["DB_HOST"],
         "PORT": secret["DB_PORT"],
         "OPTIONS": {
