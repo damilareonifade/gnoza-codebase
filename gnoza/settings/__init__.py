@@ -89,11 +89,11 @@ ASGI_APPLICATION = "gnoza.asgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": db_secrets["DB_NAME"],
+        "NAME": secret["DB_NAME"],
         "USER": db_secrets["DB_USER"],
         "PASSWORD": db_secrets["DB_PASSWORD"],
-        "HOST": db_secrets["DB_HOST"],
-        "PORT": db_secrets["DB_PORT"],
+        "HOST": secret["DB_HOST"],
+        "PORT": secret["DB_PORT"],
         "OPTIONS": {
             "connect_timeout": 10,
         },
