@@ -129,9 +129,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
-CORS_ALLOWED_ORIGINS = os.getenv(
-    "CORS_ALLOWED_ORIGINS", "http://localhost:3000"
-).split(",")
+CORS_ALLOWED_ORIGINS = secret["CORS_ALLOWED_ORIGINS"].split(",")
 CORS_ALLOW_CREDENTIALS = True
 
 # ---------------------------------------------------------------------------
@@ -181,15 +179,15 @@ SPECTACULAR_SETTINGS = {
 }
 
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-GOOGLE_CLOUD_TTS_CREDENTIALS = os.getenv("GOOGLE_CLOUD_TTS_CREDENTIALS", "")
+GEMINI_API_KEY = secret["GEMINI_API_KEY"]
+GOOGLE_CLOUD_TTS_CREDENTIALS = secret["GOOGLE_CLOUD_TTS_CREDENTIALS"]
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(
-        days=int(os.getenv("ACCESS_TOKEN_LIFETIME_DAYS", "7"))
+        days=int(secret["ACCESS_TOKEN_LIFETIME_DAYS"])
     ),
     "REFRESH_TOKEN_LIFETIME": timedelta(
-        days=int(os.getenv("REFRESH_TOKEN_LIFETIME_DAYS", "90"))
+        days=int(secret["REFRESH_TOKEN_LIFETIME_DAYS"])
     ),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
@@ -204,16 +202,11 @@ SIMPLE_JWT = {
 }
 
 
-# ==========================================
-# REDIS & CELERY - Production strict, Local safe fallback
-# ==========================================
 REDIS_URL = secret['REDIS_URL']
 
 if REDIS_URL:
-    # Production: use Render's REDIS_URL exactly
-    REDIS_LOCATION = REDIS_URL.rstrip('/') + '/0'
+    REDIS_LOCATION = REDIS_URL
 else:
-    # Local development: safe fallback
     if DEBUG:
         REDIS_LOCATION = 'redis://localhost:6379/0'
         print("WARNING: REDIS_URL not set. Using local Redis fallback for development.")
@@ -372,7 +365,7 @@ NIGERIAN_NEWS_SOURCES = {
     'Vanguard': {'homepage': 'https://www.vanguardngr.com/', 'article_selector': 'article.entry'},
 }
 
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+GEMINI_API_KEY = secret['GEMINI_API_KEY']
 if not GEMINI_API_KEY:
     raise ValueError("GEMINI_API_KEY required!")
 
@@ -384,12 +377,12 @@ GEMINI_MAX_TOPICS_PER_RUN = 15
 
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
-EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
-EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "GnozaAI <noreply@gnoza.ai>")
+EMAIL_HOST = secret["EMAIL_HOST"]
+EMAIL_PORT = int(secret["EMAIL_PORT"])
+EMAIL_HOST_USER = secret["EMAIL_HOST_USER"]
+EMAIL_HOST_PASSWORD = secret["EMAIL_HOST_PASSWORD"]
+EMAIL_USE_TLS = True
+DEFAULT_FROM_EMAIL = secret["DEFAULT_FROM_EMAIL"]
 
 # ---------------------------------------------------------------------------
 # Jazzmin — Admin UI
