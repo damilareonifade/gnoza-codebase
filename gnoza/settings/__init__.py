@@ -2,7 +2,7 @@ from pathlib import Path
 from datetime import timedelta
 import os
 from dotenv import load_dotenv
-from aws_secret import get_secret
+from gnoza.aws_secret import get_secret
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
