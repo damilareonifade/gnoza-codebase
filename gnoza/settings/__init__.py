@@ -319,17 +319,17 @@ CELERY_BEAT_SCHEDULE = {
     # Reminders
     'check-and-send-due-reminders': {
         'task': 'reminders.tasks.check_and_send_due_reminders',
-        'schedule': crontab(minute='*/5'),  # Every 5 minutes
+        'schedule': crontab(minute='*/30'),  # Every 5 minutes
     },
 
     'check-learning-sessions': {
         'task': 'reminders.tasks.check_learning_sessions',
-        'schedule': crontab(minute=0),  # Every hour
+        'schedule': crontab(minute=20, hour='*/1'),  # Every hour
     },
 
     'check-upcoming-birthdays': {
         'task': 'reminders.tasks.check_upcoming_birthdays',
-        'schedule': crontab(minute=0, hour=6),  # Daily at 6 AM
+        'schedule': crontab(minute=0, hour=6),  # Daily at 6 AMd
     },
 
     'cleanup-old-completed-reminders': {
