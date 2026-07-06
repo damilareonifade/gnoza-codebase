@@ -4,7 +4,7 @@ from datetime import date
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
-from accounts.models import User, Profile
+from accounts.models import User
 
 
 FIRST_NAMES = [
