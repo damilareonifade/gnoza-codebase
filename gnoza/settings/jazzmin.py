@@ -17,9 +17,9 @@ JAZZMIN_SETTINGS = {
     # Relative path to a favicon for your site, will default to site_logo if absent (ideally 32x32 px)
     "site_icon": None,
     # Welcome text on the login screen
-    "welcome_sign": "Welcome to the FindProduct Admin",
+    "welcome_sign": "Welcome to the Gnoza Admin",
     # Copyright on the footer
-    "copyright": "FindProduct Ltd",
+    "copyright": "Gnoza AI",
     # List of model admins to search from the search bar, search bar omitted if excluded
     # If you want to use a single search field you dont need to use a list, you can use a simple string
     "search_model": ["accounts.User"],
