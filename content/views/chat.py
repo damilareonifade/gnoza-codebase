@@ -4,10 +4,11 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 
-from gnoza.response import Ok, BadRequest
+from gnoza.response import Ok, BadRequest, NotFound
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from ..models import ContentChat
 from ..serializers import ContentChatSerializer
+from .ai_analysis import _get_content_text
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,10 @@ class ContentChatView(APIView):
 
     @extend_schema(responses=OpenApiResponse(description="Chat history"))
     def get(self, request, content_id):
+        title, _ = _get_content_text(content_id)
+        if not title:
+            return NotFound("Content not found.")
+
         chat = ContentChat.objects.filter(
             user=request.user, content_id=content_id
         ).first()
@@ -35,24 +40,34 @@ class ContentChatView(APIView):
         if not user_message:
             return BadRequest("Message text is required.")
 
+        title, full_text = _get_content_text(content_id)
+        if not title:
+            return NotFound("Content not found.")
+
         chat, _ = ContentChat.objects.get_or_create(
             user=request.user, content_id=content_id
         )
         chat.messages.append({"role": "user", "text": user_message})
 
-        ai_text = self._generate_ai_response(user_message, chat)
+        ai_text = self._generate_ai_response(user_message, chat, title, full_text)
         chat.messages.append({"role": "ai", "text": ai_text})
         chat.save()
 
         return Ok("Message sent", ContentChatSerializer(chat).data)
 
-    def _generate_ai_response(self, user_message: str, chat: ContentChat) -> str:
+    def _generate_ai_response(self, user_message: str, chat: ContentChat, title: str, full_text: str) -> str:
         try:
             from django.conf import settings
             import google.generativeai as genai
 
             genai.configure(api_key=settings.GEMINI_API_KEY)
-            model = genai.GenerativeModel("gemini-2.5-flash")
+            model = genai.GenerativeModel(
+                "gemini-2.5-flash",
+                system_instruction=(
+                    "You are Gnoza, an assistant discussing the following content with the user. "
+                    f"Title: {title}\n\nContent:\n{full_text[:6000]}"
+                ),
+            )
 
             history = chat.messages[-10:]
             gemini_history = []

@@ -3,7 +3,6 @@
 import logging
 from celery import shared_task
 from django.utils import timezone
-from django.contrib.auth.models import User
 from firebase_admin.messaging import Message, Notification
 from firebase_admin import messaging
 from dateutil.relativedelta import relativedelta
@@ -57,11 +56,11 @@ def send_reminder(self, reminder_id: str):
         
         # Check if user has FCM token
         if not hasattr(user, 'preferences') or not user.preferences.fcm_token:
-            logger.warning(f"No FCM token for user {user.username}, skipping reminder {reminder_id}")
+            logger.warning(f"No FCM token for user {user.email}, skipping reminder {reminder_id}")
             return {'status': 'skipped', 'reason': 'no_fcm_token'}
-        
+
         # Prepare notification
-        title = f"📬 {reminder.get_display_name()}"
+        title = f"📬 {reminder.title}"
         body = reminder.description[:200] if reminder.description else reminder.title[:200]
         
         try:
@@ -77,7 +76,7 @@ def send_reminder(self, reminder_id: str):
             )
             
             response = messaging.send(message)
-            logger.info(f"✓ Reminder sent to user {user.username}: {response}")
+            logger.info(f"✓ Reminder sent to user {user.email}: {response}")
             
             # Record delivery history
             ReminderHistory.objects.create(
@@ -104,8 +103,8 @@ def send_reminder(self, reminder_id: str):
                 reminder.end_date = timezone.now()
             
             reminder.save()
-            
-            return {'status': 'sent', 'user': user.username}
+
+            return {'status': 'sent', 'user': user.email}
         
         except Exception as e:
             logger.error(f"FCM send failed for reminder {reminder_id}: {str(e)}")
@@ -229,7 +228,7 @@ def send_learning_session(schedule_id: str, session_number: int):
         user = schedule.user
         
         if not hasattr(user, 'preferences') or not user.preferences.fcm_token:
-            logger.warning(f"No FCM token for user {user.username}")
+            logger.warning(f"No FCM token for user {user.email}")
             return
         
         # Prepare notification
@@ -248,7 +247,7 @@ def send_learning_session(schedule_id: str, session_number: int):
             )
             
             response = messaging.send(message)
-            logger.info(f"✓ Learning session sent to user {user.username}: {response}")
+            logger.info(f"✓ Learning session sent to user {user.email}: {response}")
         
         except Exception as e:
             logger.error(f"Failed to send learning session: {str(e)}")

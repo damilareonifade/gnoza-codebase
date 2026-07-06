@@ -6,7 +6,7 @@ from datetime import timedelta
 
 from gnoza.response import Ok, BadRequest, NotFound
 from content.models import ContentCluster
-from ..models import Topic, UserTopic
+from ..models import Topic
 from ..serializers import TopicSerializer
 
 

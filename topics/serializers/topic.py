@@ -22,12 +22,3 @@ class TopicSerializer(serializers.ModelSerializer):
                 user=request.user, topic=obj, is_saved=True
             ).exists()
         return False
-
-
-class UserTopicSerializer(serializers.ModelSerializer):
-    topic = TopicSerializer(read_only=True)
-
-    class Meta:
-        model = UserTopic
-        fields = ["id", "topic", "is_saved", "saved_at", "updated_at"]
-        read_only_fields = ["id", "saved_at", "updated_at"]

@@ -52,8 +52,3 @@ class UserAdmin(BaseUserAdmin):
         return obj.get_full_name() or "—"
 
     full_name.short_description = "Full Name"
-
-
-# ---------------------------------------------------------------------------
-# Profile admin (standalone)
-# ---------------------------------------------------------------------------

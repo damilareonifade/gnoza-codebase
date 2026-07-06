@@ -1,3 +1,3 @@
-from .topic import TopicSerializer, UserTopicSerializer
+from .topic import TopicSerializer
 
-__all__ = ["TopicSerializer", "UserTopicSerializer"]
+__all__ = ["TopicSerializer"]

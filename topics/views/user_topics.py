@@ -3,7 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from gnoza.response import Ok, Created, BadRequest, NotFound
 from ..models import Topic, UserTopic
-from ..serializers import TopicSerializer, UserTopicSerializer
+from ..serializers import TopicSerializer
 
 
 class UserSavedTopicsView(APIView):
