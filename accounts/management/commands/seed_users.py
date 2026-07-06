@@ -1,5 +1,4 @@
 import random
-from datetime import date
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
@@ -116,18 +115,13 @@ class Command(BaseCommand):
                     is_active=True,
                 )
 
-                # Profile is auto-created by post_save signal.
+                # UserPreference is auto-created by post_save signal.
                 # Update with extra dummy data.
-                profile = user.profile
-                profile.bio = random.choice(BIOS)
-                profile.location = random.choice(LOCATIONS)
-                profile.website = random.choice(WEBSITES)
-                profile.date_of_birth = date(
-                    random.randint(1970, 2000),
-                    random.randint(1, 12),
-                    random.randint(1, 28),
-                )
-                profile.save()
+                preference = user.preferences
+                preference.bio = random.choice(BIOS)
+                preference.preferred_locations = [random.choice(LOCATIONS)]
+                preference.website = random.choice(WEBSITES)
+                preference.save()
 
                 created_count += 1
 
