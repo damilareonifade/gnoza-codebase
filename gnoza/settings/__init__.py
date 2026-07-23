@@ -8,10 +8,27 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 from celery.schedules import crontab
 
-db_secrets = get_secret("rds!db-b6160ecf-5de6-4e8b-b6ff-4abccb70a585")
-secret = get_secret("gnoza_app_secrets")
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+
+ENV_SECRET_KEYS = [
+    "SECRET_KEY", "ALLOWED_HOSTS", "DB_NAME", "DB_HOST", "DB_PORT",
+    "CORS_ALLOWED_ORIGINS", "EMAIL_HOST", "EMAIL_PORT", "EMAIL_HOST_USER",
+    "EMAIL_HOST_PASSWORD", "DEFAULT_FROM_EMAIL", "EVENTBRITE_PRIVATE_TOKEN",
+    "GEMINI_API_KEY", "GOOGLE_CLOUD_TTS_CREDENTIALS", "GUARDIAN_API_KEY",
+    "NEWSAPI_KEY", "REDDIT_CLIENT_ID", "REDDIT_CLIENT_SECRET", "REDDIT_USER_AGENT",
+    "REDIS_URL", "TICKETMASTER_API_KEY", "YOUTUBE_API_KEY",
+    "ACCESS_TOKEN_LIFETIME_DAYS", "REFRESH_TOKEN_LIFETIME_DAYS",
+]
+
+if DEBUG:
+    # Local development: read straight from .env, skip AWS Secrets Manager.
+    secret = {key: os.getenv(key) for key in ENV_SECRET_KEYS}
+    db_secrets = {"username": os.getenv("username"), "password": os.getenv("password")}
+else:
+    db_secrets = get_secret("rds!db-b6160ecf-5de6-4e8b-b6ff-4abccb70a585")
+    secret = get_secret("gnoza_app_secrets")
+
 SECRET_KEY = secret["SECRET_KEY"]
-DEBUG = secret["DEBUG"]
 ALLOWED_HOSTS = secret["ALLOWED_HOSTS"].split(",")
 
 # ---------------------------------------------------------------------------
@@ -19,7 +36,7 @@ ALLOWED_HOSTS = secret["ALLOWED_HOSTS"].split(",")
 # ---------------------------------------------------------------------------
 
 DJANGO_APPS = [
-    "jazzmin",  # must be before django.contrib.admin
+    "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
