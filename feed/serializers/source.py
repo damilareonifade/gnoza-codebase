@@ -35,8 +35,10 @@ def _clean_text(text: str) -> str:
 def get_source_logo(domain: str) -> str | None:
     if not domain:
         return None
-    # Try clearbit
-    return f"https://logo.clearbit.com/{domain}"
+    # Google's favicon CDN always resolves to an icon (a generic globe for
+    # unknown domains) instead of 404ing like Clearbit does for smaller/
+    # regional sources, so this never leaves a broken image.
+    return f"https://www.google.com/s2/favicons?domain={domain}&sz=64"
 
 
 class ClusterSourceSerializer(serializers.ModelSerializer):

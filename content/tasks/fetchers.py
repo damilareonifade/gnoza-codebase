@@ -55,13 +55,6 @@ def get_personalized_topics() -> list[str]:
     return list(topics)
 
 
-def _get_source_logo(domain: str) -> str | None:
-    """Fast logo URL via Google favicon CDN. No HTTP request needed."""
-    if not domain:
-        return None
-    return f"https://www.google.com/s2/favicons?domain={domain}&sz=64"
-
-
 # ==========================================
 # NEWSAPI
 # ==========================================

@@ -55,7 +55,7 @@ class PopularTopicsView(APIView):
         for name, count in top_topics:
             cluster = (
                 ContentCluster.objects.filter(
-                    Q(categories__icontains=[name]) | Q(keywords__icontains=[name]),
+                    Q(categories__contains=[name]) | Q(keywords__contains=[name]),
                     first_seen_at__gte=cutoff,
                 )
                 .order_by("-importance_score", "-first_seen_at")
@@ -112,7 +112,7 @@ class TopicContentView(APIView):
         clusters = (
             ContentCluster.objects.filter(first_seen_at__gte=cutoff)
             .filter(
-                Q(categories__icontains=[slug]) | Q(keywords__icontains=[slug])
+                Q(categories__contains=[slug]) | Q(keywords__contains=[slug])
             )
             .exclude(sources__raw_content__source_type="youtube")
             .prefetch_related("sources__raw_content")

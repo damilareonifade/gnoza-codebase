@@ -12,14 +12,13 @@ class UserSavedTopicsView(APIView):
     serializer_class = TopicSerializer
 
     def get(self, request):
-        prefs = getattr(request.user, "preferences", None)
-        topic_names = prefs.preferred_topics if prefs else []
+        topics = Topic.objects.filter(
+            user_topics__user=request.user, user_topics__is_saved=True
+        ).order_by("order")
 
-        if not topic_names:
-            return Ok("No saved topics", {"saved_topics": [], "count": 0})
-
-        topics = Topic.objects.filter(name__in=topic_names).order_by("order")
         data = TopicSerializer(topics, many=True, context={"request": request}).data
+        if not data:
+            return Ok("No saved topics", {"saved_topics": [], "count": 0})
         return Ok("Saved topics", {"saved_topics": data, "count": len(data)})
 
 

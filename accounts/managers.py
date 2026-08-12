@@ -5,6 +5,8 @@ class UserManager(BaseUserManager):
     def create_user(self, email: str, password: str = None, **extra_fields):
         if not email:
             raise ValueError("Email address is required.")
+        if not extra_fields.get("username"):
+            raise ValueError("Username is required.")
         email = self.normalize_email(email)
         extra_fields.setdefault("is_active", True)
         user = self.model(email=email, **extra_fields)

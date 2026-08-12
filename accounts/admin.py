@@ -13,6 +13,7 @@ from .models import User
 class UserAdmin(BaseUserAdmin):
     list_display = (
         "email",
+        "username",
         "full_name",
         "is_active",
         "is_staff",
@@ -21,12 +22,12 @@ class UserAdmin(BaseUserAdmin):
     )
     list_display_links = ("email", "full_name")
     list_filter = ("is_active", "is_staff", "is_superuser", "date_joined")
-    search_fields = ("email", "first_name", "last_name")
+    search_fields = ("email", "username", "first_name", "last_name")
     ordering = ("-date_joined",)
     readonly_fields = ("id", "date_joined", "last_login")
 
     fieldsets = (
-        ("Identity", {"fields": ("id", "email", "password")}),
+        ("Identity", {"fields": ("id", "email", "username", "password")}),
         ("Personal Info", {"fields": ("first_name", "last_name")}),
         (
             "Permissions",
@@ -43,7 +44,7 @@ class UserAdmin(BaseUserAdmin):
             "Create New User",
             {
                 "classes": ("wide",),
-                "fields": ("email", "first_name", "last_name", "password1", "password2", "is_active", "is_staff"),
+                "fields": ("email", "username", "first_name", "last_name", "password1", "password2", "is_active", "is_staff"),
             },
         ),
     )
