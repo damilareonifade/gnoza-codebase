@@ -88,6 +88,7 @@ class Command(BaseCommand):
             else:
                 User.objects.create_superuser(
                     email=admin_email,
+                    username="admin",
                     password=password,
                     first_name="Admin",
                     last_name="Gnoza",
@@ -102,6 +103,7 @@ class Command(BaseCommand):
                 first_name = random.choice(FIRST_NAMES)
                 last_name = random.choice(LAST_NAMES)
                 email = f"{first_name.lower()}.{last_name.lower()}.{i}@seed.gnoza.dev"
+                username = email.split("@")[0]
 
                 if User.objects.filter(email=email).exists():
                     self.stdout.write(self.style.WARNING(f"Skipping duplicate: {email}"))
@@ -109,6 +111,7 @@ class Command(BaseCommand):
 
                 user = User.objects.create_user(
                     email=email,
+                    username=username,
                     password=password,
                     first_name=first_name,
                     last_name=last_name,

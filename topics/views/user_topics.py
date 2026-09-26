@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from gnoza.response import Ok, Created, BadRequest, NotFound
 from ..models import Topic, UserTopic
 from ..serializers import TopicSerializer
+from ..services import normalize_topic_slugs, refresh_user_preferred_topics, set_explicit_topics
 
 
 class UserSavedTopicsView(APIView):
@@ -40,8 +41,14 @@ class ToggleSaveTopicView(APIView):
             user_topic.is_saved = not user_topic.is_saved
             user_topic.save(update_fields=["is_saved"])
 
+        preferred_topics = refresh_user_preferred_topics(request.user)
         action = "saved" if user_topic.is_saved else "unsaved"
-        return Ok(f"Topic {action}", {"topic_id": str(topic.id), "name": topic.name, "is_saved": user_topic.is_saved})
+        return Ok(f"Topic {action}", {
+            "topic_id": str(topic.id),
+            "name": topic.name,
+            "is_saved": user_topic.is_saved,
+            "preferred_topics": preferred_topics,
+        })
 
 
 class BulkSaveTopicsView(APIView):
@@ -67,11 +74,12 @@ class BulkSaveTopicsView(APIView):
             )
             saved.append({"id": str(topic.id), "name": topic.name})
 
-        return Ok(f"{len(saved)} topics saved", {"saved_topics": saved})
+        preferred_topics = refresh_user_preferred_topics(request.user)
+        return Ok(f"{len(saved)} topics saved", {"saved_topics": saved, "preferred_topics": preferred_topics})
 
 
 class UpdateUserTopicsView(APIView):
-    """PUT /api/v1/topics/update — replace the user's preferred_topics list."""
+    """PUT /api/v1/topics/update — replace the topics the user picked (names or slugs)."""
     permission_classes = [IsAuthenticated]
     serializer_class = TopicSerializer
 
@@ -80,19 +88,15 @@ class UpdateUserTopicsView(APIView):
         if not isinstance(topic_names, list):
             return BadRequest("topics must be a list of topic names.")
 
-        if topic_names:
-            existing = set(Topic.objects.filter(name__in=topic_names).values_list("name", flat=True))
-            invalid = [t for t in topic_names if t not in existing]
-            if invalid:
-                all_names = list(Topic.objects.values_list("name", flat=True))
-                return BadRequest(f"Invalid topic names: {invalid}. Available: {all_names}")
+        slugs = normalize_topic_slugs(topic_names)
+        invalid = [t for t in topic_names if str(t).strip().lower() not in slugs]
+        if invalid:
+            all_names = list(Topic.objects.values_list("name", flat=True))
+            return BadRequest(f"Invalid topic names: {invalid}. Available: {all_names}")
 
-        prefs = getattr(request.user, "preferences", None)
-        if not prefs:
-            from accounts.models import UserPreference
-            prefs = UserPreference.objects.create(user=request.user)
-
-        prefs.preferred_topics = topic_names
-        prefs.save(update_fields=["preferred_topics"])
-
-        return Ok("Topics updated", {"preferred_topics": topic_names, "count": len(topic_names)})
+        preferred_topics = set_explicit_topics(request.user, slugs)
+        return Ok("Topics updated", {
+            "selected_topics": slugs,
+            "preferred_topics": preferred_topics,
+            "count": len(preferred_topics),
+        })

@@ -211,7 +211,7 @@ class YouTubeRecommendationsView(APIView):
         qs = RawContent.objects.filter(source_type="youtube")
         q = Q()
         if user_topics:
-            q |= Q(raw_data__categories__overlap=user_topics) | Q(raw_data__keywords__overlap=user_topics)
+            q |= Q(raw_data__categories__has_any_keys=user_topics) | Q(raw_data__keywords__has_any_keys=user_topics)
         if user_country:
             q |= Q(raw_data__user_country=user_country)
         if q:

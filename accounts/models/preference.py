@@ -1,3 +1,4 @@
+import logging
 import uuid
 from django.db import models
 from django.core.exceptions import ValidationError
@@ -6,6 +7,7 @@ from django.db.models.signals import post_save
 
 from gnoza.models import TimestampedModel
 
+logger = logging.getLogger(__name__)
 
 phone_validator = RegexValidator(
     regex=r'^\+?[\d\s\-\(\)]{10,20}$',
@@ -105,6 +107,12 @@ class UserPreference(TimestampedModel):
 def create_user_preference(sender, instance, created, **kwargs):
     if created:
         UserPreference.objects.get_or_create(user=instance)
+        # Every new user starts with preferred topics drawn from current news.
+        try:
+            from topics.services import refresh_user_preferred_topics
+            refresh_user_preferred_topics(instance)
+        except Exception as exc:
+            logger.warning(f"Could not assign preferred topics to {instance.pk}: {exc}")
 
 
 post_save.connect(create_user_preference, sender="accounts.User")

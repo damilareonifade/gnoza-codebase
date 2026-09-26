@@ -89,12 +89,22 @@ class UserPreferenceUpdateSerializer(serializers.ModelSerializer):
         ]
 
     def validate_preferred_topics(self, value):
-        return [t for t in value if t in VALID_TOPICS]
+        return [t.strip().lower() for t in value if t.strip().lower() in VALID_TOPICS]
 
     def validate_preferred_locations(self, value):
         if len(value) > 5:
             raise BadRequest("Maximum 5 locations allowed.")
         return [loc.strip() for loc in value if loc.strip()]
+
+    def update(self, instance, validated_data):
+        # preferred_topics is derived — route the user's picks through the topics service.
+        explicit_topics = validated_data.pop("preferred_topics", None)
+        instance = super().update(instance, validated_data)
+        if explicit_topics is not None:
+            from topics.services import set_explicit_topics
+            set_explicit_topics(instance.user, explicit_topics)
+            instance.refresh_from_db(fields=["preferred_topics"])
+        return instance
 
 
 class OnboardingUpdateSerializer(serializers.Serializer):
@@ -112,7 +122,7 @@ class OnboardingUpdateSerializer(serializers.Serializer):
     complete = serializers.BooleanField(required=False, default=False)
 
     def validate_preferred_topics(self, value):
-        return [t for t in value if t in VALID_TOPICS]
+        return [t.strip().lower() for t in value if t.strip().lower() in VALID_TOPICS]
 
     def validate_preferred_locations(self, value):
         if len(value) > 5:

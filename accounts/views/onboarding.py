@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
 from gnoza.response import Ok, BadRequest
+from topics.services import get_explicit_topics, set_explicit_topics
 from ..models import UserPreference
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from ..serializers import OnboardingUpdateSerializer, EditProfileSerializer, UserPreferenceSerializer
@@ -36,7 +37,9 @@ class OnboardingUpdateView(APIView):
         validated = serializer.validated_data
 
         if "preferred_topics" in validated:
-            prefs.preferred_topics = validated["preferred_topics"]
+            explicit_topics = validated["preferred_topics"]
+        else:
+            explicit_topics = get_explicit_topics(request.user)
         if "preferred_locations" in validated:
             prefs.preferred_locations = validated["preferred_locations"]
         if "preferred_language" in validated:
@@ -49,12 +52,15 @@ class OnboardingUpdateView(APIView):
         if validated.get("complete") or (
             prefs.preferred_locations
             and prefs.preferred_language
-            and prefs.preferred_topics
+            and explicit_topics
         ):
             prefs.onboarding_completed = True
             prefs.onboarding_step = "complete"
 
         prefs.save()
+
+        if "preferred_topics" in validated:
+            prefs.preferred_topics = set_explicit_topics(request.user, explicit_topics)
 
         return Ok(
             "Onboarding updated successfully",

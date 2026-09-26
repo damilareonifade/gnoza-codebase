@@ -333,6 +333,12 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(minute=30, hour='*/6'),  # Every 6 hours at :30
     },
 
+    # Topics — re-rank from latest news and refresh users' preferred_topics
+    'refresh-preferred-topics': {
+        'task': 'topics.tasks.refresh_preferred_topics',
+        'schedule': crontab(minute=45, hour='*/1'),  # Every hour at :45
+    },
+
     # Reminders
     'check-and-send-due-reminders': {
         'task': 'reminders.tasks.check_and_send_due_reminders',
